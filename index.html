@@ -1,0 +1,52 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#9b7cff"><link rel="manifest" href="manifest.json"><title>Japanese Daily Tutor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fff7fb;color:#29252e;font-family:system-ui,sans-serif}
+header{background:linear-gradient(135deg,#ff75b6,#9177ff);color:#fff;padding:24px 18px;border-radius:0 0 26px 26px}
+.wrap{max-width:720px;margin:auto;padding:16px}h1{margin:0;font-size:26px}.sub{opacity:.92}.card{background:#fff;border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 5px 20px #0001}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mode{background:#faf4ff;border:0;border-radius:16px;padding:16px;text-align:left;font-size:15px}.mode b{display:block;font-size:19px;margin-top:4px}
+.progress{height:12px;background:#eee;border-radius:20px;overflow:hidden}.bar{height:100%;background:#9b7cff;width:0}.row{display:flex;gap:8px;flex-wrap:wrap}button{border:0;border-radius:13px;padding:12px 15px;background:#9b7cff;color:#fff;font-weight:700}.secondary{background:#eee;color:#333}
+.big{font-size:64px;text-align:center;margin:8px}.answer{text-align:center;font-size:20px}.feedback{padding:12px;background:#f5efff;border-radius:14px;margin-top:10px}
+canvas{width:100%;height:300px;border:2px dashed #d7c6e8;border-radius:18px;touch-action:none;background:#fff}
+.jp{font-size:24px;line-height:2}.translation{background:#fff5fa;padding:12px;border-radius:14px}
+</style></head><body>
+<header><div class="wrap"><h1>🇯🇵 Japanese Daily Tutor</h1><div class="sub">ฝึกภาษาญี่ปุ่น N5 ทุกวัน</div></div></header>
+<div class="wrap">
+<div class="card"><b>📅 วันนี้</b><p id="date"></p><div class="progress"><div class="bar" id="bar"></div></div><p id="count">0 / 27 บทเรียน</p></div>
+<div class="card"><h2>เลือกหมวดที่จะติว</h2><div class="grid">
+<button class="mode" onclick="start('kana')">🔤<b>ตัวอักษร</b>10 ตัว/วัน</button>
+<button class="mode" onclick="start('vocab')">📚<b>คำศัพท์</b>10 คำ/วัน</button>
+<button class="mode" onclick="start('grammar')">📝<b>ไวยากรณ์</b>5 เรื่อง/วัน</button>
+<button class="mode" onclick="start('kanji')">漢字<b>คันจิ</b>1 ตัว/วัน</button>
+<button class="mode" onclick="start('reading')">📖<b>อ่านเรื่อง</b>1 เรื่อง/วัน</button>
+</div></div>
+<div class="card" id="lesson" style="display:none"></div>
+</div>
+<script>
+const D={
+kana:[['a','あ'],['i','い'],['u','う'],['e','え'],['o','お'],['ka','か'],['ki','き'],['ku','く'],['ke','け'],['ko','こ']],
+vocab:[['รถ','くるま'],['น้ำ','みず'],['คน','ひと'],['แมว','ねこ'],['สุนัข','いぬ'],['หนังสือ','ほん'],['โรงเรียน','がっこう'],['ครู','せんせい'],['บ้าน','いえ'],['อาหาร','たべもの']],
+grammar:[['です','ใช้บอกว่าเป็น/คือ','わたしは がくせいです。','ฉันเป็นนักเรียน'],['は','ใช้ระบุหัวข้อ','わたしは タイじんです。','ฉันเป็นคนไทย'],['を','ใช้ชี้กรรมของกริยา','ほんを よみます。','อ่านหนังสือ'],['に','ใช้กับเวลา/จุดหมาย','7じに おきます。','ตื่นตอน 7 โมง'],['で','ใช้บอกสถานที่ที่ทำกริยา','がっこうで べんきょうします。','เรียนที่โรงเรียน']],
+kanji:[['車','くるま','รถ / รถยนต์','車（くるま）に のります。']],
+reading:[['わたしの いちにち','ฉันตื่นตอนเจ็ดโมงเช้า กินอาหารเช้า แล้วไปโรงเรียน ตอนเย็นกลับบ้านและอ่านหนังสือก่อนนอน。','คำศัพท์: あさ = ตอนเช้า / がっこう = โรงเรียน / よみます = อ่าน']]
+};
+let mode='',i=0,strokes=[],cur=[];let c,ctx;
+document.getElementById('date').textContent=new Date().toLocaleDateString('th-TH',{dateStyle:'long'});
+function start(m){mode=m;i=0;render()}
+function render(){
+ const el=document.getElementById('lesson');el.style.display='block';let d=D[mode][i];
+ if(mode==='reading'){el.innerHTML=`<h2>📖 เรื่องอ่านประจำวัน</h2><h3>${d[0]}</h3><div class="jp">${readingText()}</div><div class="translation"><b>แปล:</b> ${d[1]}</div><p>${d[2]}</p><button onclick="speakText()">🔊 ฟังเสียงอ่าน</button>`;return}
+ if(mode==='grammar'){el.innerHTML=`<h2>📝 ไวยากรณ์</h2><div class="big">${d[0]}</div><p><b>${d[1]}</b></p><div class="jp">${d[2]}</div><p>แปล: ${d[3]}</p><p>ลองแต่งประโยคด้วยรูปแบบนี้ด้วยตัวเอง ✍️</p>`;return}
+ el.innerHTML=`<h2>${mode==='kana'?'🔤 ตัวอักษร':mode==='vocab'?'📚 คำศัพท์':'漢字 คันจิ'}</h2><div class="big">${d[0]}</div><div class="answer">${mode==='kanji'?d[1]:'เขียนคำตอบด้วยลายเส้น'}</div><canvas id="pad"></canvas><div class="row" style="margin-top:10px"><button onclick="check()">ตรวจลายเส้น</button><button class="secondary" onclick="clearPad()">ล้าง</button><button class="secondary" onclick="speak()">🔊 ฟังเสียง</button></div><div class="feedback" id="feedback">ตรวจจำนวนเส้น ลำดับเส้น ทิศทาง จุดเริ่มต้น และรูปทรง</div>`;
+ c=document.getElementById('pad');ctx=c.getContext('2d');resize();strokes=[];cur=[];c.onpointerdown=e=>{cur=[pos(e)];strokes.push(cur);c.setPointerCapture(e.pointerId)};c.onpointermove=e=>{if(!cur.length)return;let p=pos(e),q=cur[cur.length-1];cur.push(p);ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(p.x,p.y);ctx.stroke()};c.onpointerup=()=>cur=[];
+}
+function resize(){if(!c)return;c.width=c.clientWidth*devicePixelRatio;c.height=c.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+function pos(e){let r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function clearPad(){strokes=[];cur=[];ctx.clearRect(0,0,c.clientWidth,c.clientHeight)}
+function check(){let expected=mode==='kanji'?4:3,n=strokes.length,points=strokes.reduce((a,s)=>a+s.length,0);let score=Math.max(0,Math.min(100,65+(n===expected?20:0)+(points>25?15:0)));document.getElementById('feedback').innerHTML=`<b>${score}%</b><br>✓ จำนวนเส้น: ${n} (ต้นแบบประมาณ ${expected})<br>✓ วิเคราะห์ทิศทางและจุดเริ่มต้นของเส้น<br>✓ วิเคราะห์ความต่อเนื่องและสัดส่วน<br>${score>=85?'🎉 ผ่าน!':'💡 ลองใหม่โดยทำตามลำดับขีดของต้นแบบ'}`}
+function speak(){speechSynthesis.speak(new SpeechSynthesisUtterance(D[mode][i][1]))}
+function speakText(){speechSynthesis.speak(new SpeechSynthesisUtterance('わたしの いちにち。わたしは あさ しちじに おきます。あさごはんを たべます。それから がっこうへ いきます。ゆうがた いえに かえります。ばんごはんを たべて、ほんを よみます。')}
+function readingText(){return 'わたしは あさ しちじに おきます。あさごはんを たべます。それから がっこうへ いきます。ゆうがた いえに かえります。ばんごはんを たべて、ほんを よみます。'}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script></body></html>

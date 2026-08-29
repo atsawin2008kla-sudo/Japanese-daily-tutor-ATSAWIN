@@ -1,0 +1,10 @@
+{
+  "name": "Japanese Daily Tutor",
+  "short_name": "JP Tutor",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fff7fb",
+  "theme_color": "#9b7cff",
+  "lang": "th",
+  "icons": []
+}
